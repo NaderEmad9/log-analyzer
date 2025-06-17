@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Upload, Search, FileText, AlertTriangle, CheckCircle, XCircle, Sun, Moon, Filter } from 'lucide-react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
+import { Upload, Search, FileText, AlertTriangle, CheckCircle, XCircle, Sun, Moon, Filter, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +55,11 @@ const LogAnalyzer = () => {
   const [expandedFiles, setExpandedFiles] = useState<Set<string>>(new Set());
   const [startDateTime, setStartDateTime] = useState<Date | null>(null);
   const [endDateTime, setEndDateTime] = useState<Date | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const addMoreInputRef = useRef<HTMLInputElement | null>(null);
+
+  // For swipe-to-delete, track which file is being swiped (by id)
+  const [swipingFileId, setSwipingFileId] = useState<string | null>(null);
 
   const analyzeLogContent = (content: string, fileName: string): LogFile => {
     const lines = content.split('\n');
@@ -124,12 +129,24 @@ const LogAnalyzer = () => {
     });
   }, []);
 
+  // Replace the onDrop handler with a Tauri/Electron-compatible version
+  // Tauri/Electron sometimes require explicit permission for drag-and-drop and may not populate dataTransfer.files as expected for security reasons.
+  // Use the input as a fallback if drag-and-drop fails.
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    if (e.dataTransfer.files) {
-      handleFileUpload(e.dataTransfer.files);
+
+    // Tauri/Electron: dataTransfer.files may be empty for security reasons.
+    // Try to use dataTransfer.items if available, else fallback to input.
+    const dt = e.dataTransfer;
+    if (dt.files && dt.files.length > 0) {
+      handleFileUpload(dt.files);
+      return;
+    }
+    // Fallback: prompt file input if no files detected (Tauri/Electron case)
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
     }
   }, [handleFileUpload]);
 
@@ -230,11 +247,16 @@ const LogAnalyzer = () => {
   };
 
   const getEntryIcon = (type: LogEntry['type']) => {
+    // Always use normal color for icons inside files (not white in dark mode)
     switch (type) {
-      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'warning': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      default: return <FileText className="w-4 h-4 text-blue-500" />;
+      case 'error':
+        return <XCircle className="w-4 h-4" style={{ color: "#ef4444" }} />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4" style={{ color: "#eab308" }} />;
+      case 'success':
+        return <CheckCircle className="w-4 h-4" style={{ color: "#22c55e" }} />;
+      default:
+        return <FileText className="w-4 h-4" style={{ color: "#3b82f6" }} />;
     }
   };
 
@@ -256,13 +278,41 @@ const LogAnalyzer = () => {
     setEndDateTime(null);
   };
 
+  // Clear all files handler
+  const clearAllFiles = () => setFiles([]);
+
+  // Delete a single file by id
+  const deleteFile = (fileId: string) => {
+    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setExpandedFiles(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(fileId);
+      return newSet;
+    });
+  };
+
   return (
     <TooltipProvider>
       <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-slate-900' : 'bg-gray-50'}`}>
         <div className="container mx-auto p-6 max-w-7xl">
           {/* Header - Centered */}
           <div className="flex justify-between items-center mb-8">
-            <div className="flex-1"></div>
+            {/* Clear All Files Button (top left) */}
+            <div className="flex-1 flex items-center">
+              {files.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`mr-2 ${isDarkMode ? "text-white" : ""}`}
+                  onClick={clearAllFiles}
+                  type="button"
+                  title="Clear all files"
+                >
+                  <Trash2 className={`w-4 h-4 mr-1 ${isDarkMode ? "text-white" : "text-red-600"}`} />
+                  Clear All
+                </Button>
+              )}
+            </div>
             <div className="text-center">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 Log Analyzer
@@ -275,7 +325,10 @@ const LogAnalyzer = () => {
                 size="sm"
                 className="transition-all duration-200"
               >
-                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {isDarkMode
+                  ? <Sun className="w-4 h-4 text-white" />
+                  : <Moon className="w-4 h-4" />
+                }
               </Button>
             </div>
           </div>
@@ -283,10 +336,12 @@ const LogAnalyzer = () => {
           {/* File Upload Area */}
           {files.length === 0 && (
             <Card className="mb-8 border-2 border-dashed border-blue-300 hover:border-blue-400 transition-colors duration-200">
-              <CardContent 
+              <CardContent
                 className="p-12 text-center cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors duration-200"
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
+                onDragEnter={e => e.preventDefault()}
+                onDragLeave={e => e.preventDefault()}
               >
                 <Upload className="w-16 h-16 text-blue-500 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -295,20 +350,25 @@ const LogAnalyzer = () => {
                 <p className="text-gray-500 dark:text-gray-400 mb-4">
                   Supports .log and .txt files. Drop multiple files at once.
                 </p>
+                {/* Hidden input and button outside label */}
                 <input
                   type="file"
                   multiple
                   accept=".log,.txt,text/plain"
+                  ref={fileInputRef}
                   onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
                   className="hidden"
                   id="file-upload"
                 />
-                <label htmlFor="file-upload">
-                  <Button variant="outline" className="cursor-pointer">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Choose Files
-                  </Button>
-                </label>
+                <Button
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Choose Files
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -327,7 +387,8 @@ const LogAnalyzer = () => {
                           <p className="text-xs text-gray-500">{dashboardStats.totalTimestamps} timestamps</p>
                         )}
                       </div>
-                      <FileText className="w-8 h-8 text-blue-500" />
+                      {/* Always use blue icon color */}
+                      <FileText className="w-8 h-8" style={{ color: "#3b82f6" }} />
                     </div>
                   </CardContent>
                 </Card>
@@ -346,7 +407,8 @@ const LogAnalyzer = () => {
                             <p className="text-2xl font-bold text-red-600">{dashboardStats.totalErrors}</p>
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithErrors} files</p>
                           </div>
-                          <XCircle className="w-8 h-8 text-red-500" />
+                          {/* Always use red icon color */}
+                          <XCircle className="w-8 h-8" style={{ color: "#ef4444" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -370,7 +432,8 @@ const LogAnalyzer = () => {
                             <p className="text-2xl font-bold text-yellow-600">{dashboardStats.totalWarnings}</p>
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithWarnings} files</p>
                           </div>
-                          <AlertTriangle className="w-8 h-8 text-yellow-500" />
+                          {/* Always use yellow icon color */}
+                          <AlertTriangle className="w-8 h-8" style={{ color: "#eab308" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -394,7 +457,8 @@ const LogAnalyzer = () => {
                             <p className="text-2xl font-bold text-green-600">{dashboardStats.totalSuccess}</p>
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithSuccess} files</p>
                           </div>
-                          <CheckCircle className="w-8 h-8 text-green-500" />
+                          {/* Always use green icon color */}
+                          <CheckCircle className="w-8 h-8" style={{ color: "#22c55e" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -406,13 +470,14 @@ const LogAnalyzer = () => {
               </div>
 
               {/* DateTime Range Filter */}
-              <div className="mb-6">
+              <div className="mb-6 flex flex-col items-center">
                 <DateTimeRangePicker
                   startDateTime={startDateTime}
                   endDateTime={endDateTime}
                   onStartDateTimeChange={setStartDateTime}
                   onEndDateTimeChange={setEndDateTime}
                   onClear={clearDateTimeFilter}
+                  className="w-full"
                 />
               </div>
 
@@ -432,7 +497,13 @@ const LogAnalyzer = () => {
                     variant={selectedFilter === 'all' ? 'default' : 'outline'}
                     onClick={() => setSelectedFilter('all')}
                     size="sm"
+                    className={
+                      selectedFilter === 'all'
+                        ? isDarkMode ? "bg-white text-black" : ""
+                        : isDarkMode ? "text-white" : ""
+                    }
                   >
+                    {/* No icon for "All" */}
                     All
                   </Button>
                   <Tooltip>
@@ -441,8 +512,18 @@ const LogAnalyzer = () => {
                         variant={selectedFilter === 'error' ? 'default' : 'outline'}
                         onClick={() => setSelectedFilter('error')}
                         size="sm"
+                        className={
+                          selectedFilter === 'error'
+                            ? isDarkMode ? "bg-white text-black" : ""
+                            : isDarkMode ? "text-white" : ""
+                        }
                       >
-                        <XCircle className="w-4 h-4 mr-1" />
+                        <XCircle
+                          className="w-4 h-4 mr-1"
+                          style={{
+                            color: "#ef4444"
+                          }}
+                        />
                         Errors
                       </Button>
                     </TooltipTrigger>
@@ -456,8 +537,18 @@ const LogAnalyzer = () => {
                         variant={selectedFilter === 'warning' ? 'default' : 'outline'}
                         onClick={() => setSelectedFilter('warning')}
                         size="sm"
+                        className={
+                          selectedFilter === 'warning'
+                            ? isDarkMode ? "bg-white text-black" : ""
+                            : isDarkMode ? "text-white" : ""
+                        }
                       >
-                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        <AlertTriangle
+                          className="w-4 h-4 mr-1"
+                          style={{
+                            color: "#eab308"
+                          }}
+                        />
                         Warnings
                       </Button>
                     </TooltipTrigger>
@@ -471,8 +562,18 @@ const LogAnalyzer = () => {
                         variant={selectedFilter === 'success' ? 'default' : 'outline'}
                         onClick={() => setSelectedFilter('success')}
                         size="sm"
+                        className={
+                          selectedFilter === 'success'
+                            ? isDarkMode ? "bg-white text-black" : ""
+                            : isDarkMode ? "text-white" : ""
+                        }
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
+                        <CheckCircle
+                          className="w-4 h-4 mr-1"
+                          style={{
+                            color: "#22c55e"
+                          }}
+                        />
                         Success
                       </Button>
                     </TooltipTrigger>
@@ -484,105 +585,148 @@ const LogAnalyzer = () => {
               </div>
 
               {/* Add More Files Button */}
-              <div className="mb-6">
+              <div className="mb-6 flex justify-center">
                 <input
                   type="file"
                   multiple
                   accept=".log,.txt,text/plain"
+                  ref={addMoreInputRef}
                   onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
                   className="hidden"
                   id="add-more-files"
                 />
-                <label htmlFor="add-more-files">
-                  <Button variant="outline" className="cursor-pointer">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Add More Files
-                  </Button>
-                </label>
+                <Button
+                  variant="outline"
+                  className={`cursor-pointer ${isDarkMode ? "text-white" : ""}`}
+                  onClick={() => addMoreInputRef.current?.click()}
+                  type="button"
+                >
+                  <Upload className={`w-4 h-4 mr-2 ${isDarkMode ? "text-white" : "text-blue-500"}`} />
+                  Add More Files
+                </Button>
               </div>
 
               {/* Log Files Display */}
               <div className="space-y-6">
                 {filteredFiles.map((file) => (
-                  <Card key={file.id} className="hover:shadow-lg transition-shadow duration-200">
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                            {file.name}
-                          </CardTitle>
-                          <div className="flex gap-2 flex-wrap">
-                            {file.errors > 0 && (
-                              <Badge variant="destructive" className="text-xs">
-                                {file.errors} Errors
-                              </Badge>
-                            )}
-                            {file.warnings > 0 && (
-                              <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-xs">
-                                {file.warnings} Warnings
-                              </Badge>
-                            )}
-                            {file.success > 0 && (
-                              <Badge className="bg-green-100 text-green-800 hover:bg-green-200 text-xs">
-                                {file.success} Success/Info
-                              </Badge>
-                            )}
-                            {file.timestampMetadata.totalTimestamps > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {file.timestampMetadata.totalTimestamps} timestamps
-                              </Badge>
-                            )}
-                            {file.timestampMetadata.earliest && file.timestampMetadata.latest && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Time range: {file.timestampMetadata.earliest.toLocaleString()} - {file.timestampMetadata.latest.toLocaleString()}
-                              </p>
+                  <div
+                    key={file.id}
+                    className="relative"
+                    // Touch events for swipe-to-delete (mobile)
+                    onTouchStart={e => {
+                      if (e.touches.length === 1) setSwipingFileId(file.id);
+                    }}
+                    onTouchEnd={() => setSwipingFileId(null)}
+                    onTouchMove={e => {
+                      // If swiped left enough, delete
+                      if (swipingFileId === file.id) {
+                        const touch = e.touches[0];
+                        if (touch && touch.clientX < 80) {
+                          deleteFile(file.id);
+                          setSwipingFileId(null);
+                        }
+                      }
+                    }}
+                  >
+                    <Card
+                      className={`hover:shadow-lg transition-shadow duration-200 ${
+                        swipingFileId === file.id ? "translate-x-[-80px] opacity-60" : ""
+                      }`}
+                    >
+                      <CardHeader>
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                              {file.name}
+                            </CardTitle>
+                            <div className="flex gap-2 flex-wrap">
+                              {file.errors > 0 && (
+                                <Badge variant="destructive" className="text-xs">
+                                  {file.errors} Errors
+                                </Badge>
+                              )}
+                              {file.warnings > 0 && (
+                                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-xs">
+                                  {file.warnings} Warnings
+                                </Badge>
+                              )}
+                              {file.success > 0 && (
+                                <Badge className="bg-green-100 text-green-800 hover:bg-green-200 text-xs">
+                                  {file.success} Success/Info
+                                </Badge>
+                              )}
+                              {file.timestampMetadata.totalTimestamps > 0 && (
+                                <Badge variant="outline" className="text-xs">
+                                  {file.timestampMetadata.totalTimestamps} timestamps
+                                </Badge>
+                              )}
+                              {file.timestampMetadata.earliest && file.timestampMetadata.latest && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  Time range: {file.timestampMetadata.earliest.toLocaleString()} - {file.timestampMetadata.latest.toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleFileExpansion(file.id)}
+                            >
+                              {expandedFiles.has(file.id) ? 'Collapse' : 'Expand'}
+                            </Button>
+                            {/* Delete button for collapsed (not expanded) files */}
+                            {!expandedFiles.has(file.id) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteFile(file.id)}
+                                title="Delete file"
+                                // Always red in both light and dark mode
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4" style={{ color: "#ef4444" }} />
+                              </Button>
                             )}
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleFileExpansion(file.id)}
-                        >
-                          {expandedFiles.has(file.id) ? 'Collapse' : 'Expand'}
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    
-                    {expandedFiles.has(file.id) && (
-                      <CardContent className="pt-0">
-                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
-                          <div className="space-y-2">
-                            {file.entries
-                              .filter(entry => {
-                                if (selectedFilter === 'all') return true;
-                                return entry.type === selectedFilter;
-                              })
-                              .filter(entry => {
-                                if (!searchQuery) return true;
-                                return entry.line.toLowerCase().includes(searchQuery.toLowerCase());
-                              })
-                              .map((entry, index) => (
-                                <div key={index} className="flex items-start gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
-                                  {getEntryIcon(entry.type)}
-                                  <span className="text-xs text-gray-500 dark:text-gray-400 font-mono min-w-[3rem]">
-                                    {entry.lineNumber}:
-                                  </span>
-                                  {entry.originalTimestamp && (
-                                    <span className="text-xs text-blue-600 dark:text-blue-400 font-mono min-w-[8rem] flex-shrink-0">
-                                      {entry.originalTimestamp}
+                      </CardHeader>
+                      
+                      {expandedFiles.has(file.id) && (
+                        <CardContent className="pt-0">
+                          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 max-h-96 overflow-y-auto">
+                            <div className="space-y-2">
+                              {file.entries
+                                .filter(entry => {
+                                  if (selectedFilter === 'all') return true;
+                                  return entry.type === selectedFilter;
+                                })
+                                .filter(entry => {
+                                  if (!searchQuery) return true;
+                                  return entry.line.toLowerCase().includes(searchQuery.toLowerCase());
+                                })
+                                .map((entry, index) => (
+                                  <div key={index} className="flex items-start gap-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
+                                    {getEntryIcon(entry.type)}
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 font-mono min-w-[3rem]">
+                                      {entry.lineNumber}:
                                     </span>
-                                  )}
-                                  <span className="text-sm font-mono text-gray-700 dark:text-gray-300 flex-1">
-                                    {highlightSearchTerm(entry.line, searchQuery)}
-                                  </span>
-                                </div>
-                              ))}
+                                    {entry.originalTimestamp && (
+                                      <span className="text-xs text-blue-600 dark:text-blue-400 font-mono min-w-[8rem] flex-shrink-0">
+                                        {entry.originalTimestamp}
+                                      </span>
+                                    )}
+                                    <span className="text-sm font-mono text-gray-700 dark:text-gray-300 flex-1">
+                                      {highlightSearchTerm(entry.line, searchQuery)}
+                                    </span>
+                                  </div>
+                                ))}
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
+                        </CardContent>
+                      )}
+                    </Card>
+                  </div>
                 ))}
               </div>
 

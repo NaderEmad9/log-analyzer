@@ -30,25 +30,25 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 240 5.9% 10%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-foreground: 240 4.8% 95.9%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 224.3 76.3% 48%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 100%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 240 3.7% 15.9%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
 
-    --sidebar-border: 220 13% 91%;
+    --sidebar-border: 240 3.7% 15.9%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
 
@@ -82,6 +82,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    --radius: 0.5rem;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -94,12 +95,13 @@
 }
 
 @layer base {
-  * {
+  /* * {
     @apply border-border;
-  }
+  } */
 
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 
   /* Override specific elements that need to maintain their own colors */
@@ -112,73 +114,31 @@
   }
 
   .dark .text-gray-600 {
-    color: hsl(215 20.2% 65.1%) !important;
+    color: #4b5563 !important;
   }
 
   .dark .text-gray-400 {
-    color: hsl(215 20.2% 65.1%) !important;
+    color: #9ca3af !important;
   }
 
   .dark .text-gray-500 {
-    color: hsl(215 20.2% 65.1%) !important;
+    color: #6b7280 !important;
   }
 
   .dark .text-gray-700 {
-    color: hsl(210 40% 98%) !important;
+    color: #374151 !important;
   }
 
   .dark .text-gray-800 {
-    color: hsl(210 40% 98%) !important;
+    color: #1f2937 !important;
   }
 
   .dark .text-gray-900 {
-    color: hsl(210 40% 98%) !important;
+    color: #111827 !important;
   }
 
   /* Remove or restrict this rule to not affect SVGs */
   /* .dark button {
     color: hsl(var(--foreground));
-  } */
-
-  /* If you want button text to be visible in dark mode, do: */
-  .dark button span,
-  .dark button .button-text,
-  .dark button .label,
-  .dark button .text {
-    color: hsl(var(--foreground));
-  }
-
-  /* Input text visibility */
-  .dark input {
-    color: hsl(var(--foreground));
-  }
-
-  /* Badge text visibility */
-  .dark .badge {
-    color: hsl(var(--foreground));
-  }
-
-  /* Card content visibility */
-  .dark .card {
-    color: hsl(var(--card-foreground));
-  }
-
-  /* Ensure muted text is still readable in dark mode */
-  .dark .text-muted-foreground {
-    color: hsl(var(--muted-foreground)) !important;
-  }
-
-
-  .dark .bg-white.text-black {
-    color: #000 !important;
-    background-color: #fff !important;
-    border-color: #fff !important;
-  }
-
-  /* --- FIX: Prevent dark mode from overriding SVG icon colors --- */
-  /* .dark svg {
-    color: unset !important;
-    fill: unset !important;
-    stroke: unset !important;
   } */
 }

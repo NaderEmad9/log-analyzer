@@ -1,4 +1,3 @@
-
 export interface ParsedTimestamp {
   original: string;
   parsed: Date | null;
@@ -42,7 +41,7 @@ export const extractTimestampFromLine = (line: string): ParsedTimestamp | null =
           // Handle US format or Apache format
           if (timestampStr.includes('[') || timestampStr.includes('+')) {
             // Apache format: [15/Jun/2024:09:34:10 +0000]
-            const cleanStr = timestampStr.replace(/[\[\]]/g, '');
+            const cleanStr = timestampStr.replace(/[[]]/g, '');
             parsedDate = new Date(cleanStr);
           } else {
             // US format: 06/15/2024 09:34:10

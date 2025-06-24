@@ -12,6 +12,8 @@ import {
   isTimestampInRange, 
   FileTimestampMetadata 
 } from '@/utils/dateTimeParser';
+import { buttonVariants } from '@/components/ui/button-variants';
+import { cn } from '@/lib/utils';
 
 interface LogEntry {
   line: string;
@@ -79,8 +81,8 @@ const LogAnalyzer = () => {
           type = 'error';
           errors++;
         }
-        // WARNING: includes WARNING and NOTICE
-        else if (lowerLine.includes('warning') || lowerLine.includes('notice')) {
+        // WARNING: includes WARNING, WARN, and NOTICE
+        else if (lowerLine.includes('warning') || lowerLine.includes('warn') || lowerLine.includes('notice')) {
           type = 'warning';
           warnings++;
         }
@@ -250,26 +252,27 @@ const LogAnalyzer = () => {
     // Always use normal color for icons inside files (not white in dark mode)
     switch (type) {
       case 'error':
-        return <XCircle className="w-4 h-4" style={{ color: "#ef4444" }} />;
+        return <XCircle className="w-4 h-4" style={{ color: "#ef4444", stroke: "#ef4444", filter: "none !important" }} />;
       case 'warning':
-        return <AlertTriangle className="w-4 h-4" style={{ color: "#eab308" }} />;
+        return <AlertTriangle className="w-4 h-4" style={{ color: "#eab308",  stroke: "#eab308", filter: "none !important" }} />;
       case 'success':
-        return <CheckCircle className="w-4 h-4" style={{ color: "#22c55e" }} />;
+        return <CheckCircle className="w-4 h-4" style={{ color: "#22c55e",  stroke: "#22c55e", filter: "none !important" }} />;
       default:
-        return <FileText className="w-4 h-4" style={{ color: "#3b82f6" }} />;
+        return <FileText className="w-4 h-4" style={{ color: "#3b82f6",  stroke: "#3b82f6", filter: "none !important" }} />;
     }
   };
 
   const highlightSearchTerm = (text: string, query: string) => {
-    if (!query) return text;
-    
+    const safeText = typeof text === 'string' ? text : String(text ?? '');
+    if (!query) return safeText;
+
     const regex = new RegExp(`(${query})`, 'gi');
-    const parts = text.split(regex);
-    
-    return parts.map((part, index) => 
-      regex.test(part) ? 
-        <span key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">{part}</span> : 
-        part
+    const parts = safeText.split(regex);
+
+    return parts.map((part, index) =>
+      regex.test(part)
+        ? <span key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">{part}</span>
+        : part
     );
   };
 
@@ -291,6 +294,14 @@ const LogAnalyzer = () => {
     });
   };
 
+  React.useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   return (
     <TooltipProvider>
       <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'dark bg-slate-900' : 'bg-gray-50'}`}>
@@ -301,15 +312,14 @@ const LogAnalyzer = () => {
             <div className="flex-1 flex items-center">
               {files.length > 0 && (
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className={`mr-2 ${isDarkMode ? "text-white" : ""}`}
+                  className={cn(buttonVariants({ variant: "outline" }), "flex items-center gap-2 mr-2", !isDarkMode ? "!text-black" : "text-white")}
                   onClick={clearAllFiles}
                   type="button"
                   title="Clear all files"
+                  style={!isDarkMode ? { color: 'black' } : {}}
                 >
-                  <Trash2 className={`w-4 h-4 mr-1 ${isDarkMode ? "text-white" : "text-red-600"}`} />
-                  Clear All
+                  <Trash2 className="w-4 h-4" style={{ color: "#ef4444", stroke: "#ef4444", filter: "none !important" }} />
+                  <span className={!isDarkMode ? "!text-black" : undefined} style={!isDarkMode ? { color: 'black' } : {}}>Clear All</span>
                 </Button>
               )}
             </div>
@@ -320,15 +330,15 @@ const LogAnalyzer = () => {
             </div>
             <div className="flex-1 flex justify-end">
               <Button
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), `flex items-center gap-2 transition-all duration-200 ${isDarkMode ? "" : "text-black"}`)}
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                variant="outline"
-                size="sm"
-                className="transition-all duration-200"
+                aria-label="Toggle dark mode"
               >
                 {isDarkMode
-                  ? <Sun className="w-4 h-4 text-white" />
-                  : <Moon className="w-4 h-4" />
+                  ? <Moon className="w-4 h-4 text-blue-500" />
+                  : <Sun className="w-4 h-4 text-black" />
                 }
+                <span className="sr-only">Toggle theme</span>
               </Button>
             </div>
           </div>
@@ -343,7 +353,10 @@ const LogAnalyzer = () => {
                 onDragEnter={e => e.preventDefault()}
                 onDragLeave={e => e.preventDefault()}
               >
-                <Upload className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                <Upload
+                  className="w-16 h-16 mx-auto mb-4"
+                  style={{ color: '#3b82f6 !important', stroke: '#3b82f6' }}
+                />
                 <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Drop your log files here
                 </h3>
@@ -360,15 +373,15 @@ const LogAnalyzer = () => {
                   className="hidden"
                   id="file-upload"
                 />
-                <Button
-                  variant="outline"
-                  className="cursor-pointer"
-                  onClick={() => fileInputRef.current?.click()}
-                  type="button"
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Choose Files
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    className={cn(buttonVariants({ variant: "outline" }), `flex items-center gap-2 cursor-pointer mx-auto ${!isDarkMode ? "text-black" : ""}`)}
+                    onClick={() => fileInputRef.current?.click()}
+                    type="button"
+                  >
+                    <span>Choose Files</span>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -388,7 +401,7 @@ const LogAnalyzer = () => {
                         )}
                       </div>
                       {/* Always use blue icon color */}
-                      <FileText className="w-8 h-8" style={{ color: "#3b82f6" }} />
+                      <FileText className="w-8 h-8" style={{ color: "#3b82f6",  stroke: "#3b82f6", filter: "none !important" }} />
                     </div>
                   </CardContent>
                 </Card>
@@ -408,7 +421,7 @@ const LogAnalyzer = () => {
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithErrors} files</p>
                           </div>
                           {/* Always use red icon color */}
-                          <XCircle className="w-8 h-8" style={{ color: "#ef4444" }} />
+                          <XCircle className="w-8 h-8" style={{ color: "#ef4444",  stroke: "#ef4444", filter: "none !important" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -433,7 +446,7 @@ const LogAnalyzer = () => {
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithWarnings} files</p>
                           </div>
                           {/* Always use yellow icon color */}
-                          <AlertTriangle className="w-8 h-8" style={{ color: "#eab308" }} />
+                          <AlertTriangle className="w-8 h-8" style={{ color: "#eab308",  stroke: "#eab308", filter: "none !important" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -458,7 +471,7 @@ const LogAnalyzer = () => {
                             <p className="text-xs text-gray-500">{dashboardStats.filesWithSuccess} files</p>
                           </div>
                           {/* Always use green icon color */}
-                          <CheckCircle className="w-8 h-8" style={{ color: "#22c55e" }} />
+                          <CheckCircle className="w-8 h-8" style={{ color: "#22c55e",  stroke: "#22c55e", filter: "none !important" }} />
                         </div>
                       </CardContent>
                     </Card>
@@ -493,38 +506,39 @@ const LogAnalyzer = () => {
                   />
                 </div>
                 <div className="flex gap-2">
+                  {/* Filter Buttons Only - Removed duplicate Clear All button */}
                   <Button
                     variant={selectedFilter === 'all' ? 'default' : 'outline'}
-                    onClick={() => setSelectedFilter('all')}
-                    size="sm"
-                    className={
+                    className={cn(
+                      `flex items-center gap-2`,
                       selectedFilter === 'all'
-                        ? isDarkMode ? "bg-white text-black" : ""
-                        : isDarkMode ? "text-white" : ""
-                    }
+                        ? isDarkMode
+                          ? '!bg-white !border !border-blue-500'
+                          : '!bg-black !text-white !border !border-blue-500'
+                        : ''
+                    )}
+                    onClick={() => setSelectedFilter('all')}
+                    {...(selectedFilter === 'all' && isDarkMode ? { style: { color: 'black', WebkitTextFillColor: 'black' } } : {})}
                   >
-                    {/* No icon for "All" */}
-                    All
+                    <span>All</span>
                   </Button>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant={selectedFilter === 'error' ? 'default' : 'outline'}
-                        onClick={() => setSelectedFilter('error')}
-                        size="sm"
-                        className={
+                        className={cn(
+                          `flex items-center gap-2`,
                           selectedFilter === 'error'
-                            ? isDarkMode ? "bg-white text-black" : ""
-                            : isDarkMode ? "text-white" : ""
-                        }
+                            ? isDarkMode
+                              ? '!bg-white !border !border-blue-500'
+                              : '!bg-black !text-white !border !border-blue-500'
+                            : ''
+                        )}
+                        onClick={() => setSelectedFilter('error')}
+                        {...(selectedFilter === 'error' && isDarkMode ? { style: { color: 'black', WebkitTextFillColor: 'black' } } : {})}
                       >
-                        <XCircle
-                          className="w-4 h-4 mr-1"
-                          style={{
-                            color: "#ef4444"
-                          }}
-                        />
-                        Errors
+                        <XCircle className="w-4 h-4" style={{ color: selectedFilter === 'error' && isDarkMode ? 'black' : '#ef4444', stroke: '#ef4444', filter: 'none !important' }} />
+                        <span>Errors</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -535,21 +549,19 @@ const LogAnalyzer = () => {
                     <TooltipTrigger asChild>
                       <Button
                         variant={selectedFilter === 'warning' ? 'default' : 'outline'}
-                        onClick={() => setSelectedFilter('warning')}
-                        size="sm"
-                        className={
+                        className={cn(
+                          `flex items-center gap-2`,
                           selectedFilter === 'warning'
-                            ? isDarkMode ? "bg-white text-black" : ""
-                            : isDarkMode ? "text-white" : ""
-                        }
+                            ? isDarkMode
+                              ? '!bg-white !border !border-blue-500'
+                              : '!bg-black !text-white !border !border-blue-500'
+                            : ''
+                        )}
+                        onClick={() => setSelectedFilter('warning')}
+                        {...(selectedFilter === 'warning' && isDarkMode ? { style: { color: 'black', WebkitTextFillColor: 'black' } } : {})}
                       >
-                        <AlertTriangle
-                          className="w-4 h-4 mr-1"
-                          style={{
-                            color: "#eab308"
-                          }}
-                        />
-                        Warnings
+                        <AlertTriangle className="w-4 h-4" style={{ color: selectedFilter === 'warning' && isDarkMode ? 'black' : '#eab308', stroke: '#eab308', filter: 'none !important' }} />
+                        <span>Warnings</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -560,21 +572,19 @@ const LogAnalyzer = () => {
                     <TooltipTrigger asChild>
                       <Button
                         variant={selectedFilter === 'success' ? 'default' : 'outline'}
-                        onClick={() => setSelectedFilter('success')}
-                        size="sm"
-                        className={
+                        className={cn(
+                          `flex items-center gap-2`,
                           selectedFilter === 'success'
-                            ? isDarkMode ? "bg-white text-black" : ""
-                            : isDarkMode ? "text-white" : ""
-                        }
+                            ? isDarkMode
+                              ? '!bg-white !border !border-blue-500'
+                              : '!bg-black !text-white !border !border-blue-500'
+                            : ''
+                        )}
+                        onClick={() => setSelectedFilter('success')}
+                        {...(selectedFilter === 'success' && isDarkMode ? { style: { color: 'black', WebkitTextFillColor: 'black' } } : {})}
                       >
-                        <CheckCircle
-                          className="w-4 h-4 mr-1"
-                          style={{
-                            color: "#22c55e"
-                          }}
-                        />
-                        Success
+                        <CheckCircle className="w-4 h-4" style={{ color: selectedFilter === 'success' && isDarkMode ? 'black' : '#22c55e', stroke: '#22c55e', filter: 'none !important' }} />
+                        <span>Success</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -596,13 +606,12 @@ const LogAnalyzer = () => {
                   id="add-more-files"
                 />
                 <Button
-                  variant="outline"
-                  className={`cursor-pointer ${isDarkMode ? "text-white" : ""}`}
+                  className={cn(buttonVariants({ variant: "outline" }), `flex items-center gap-2 cursor-pointer ${isDarkMode ? "text-white" : "text-black"}`)}
                   onClick={() => addMoreInputRef.current?.click()}
                   type="button"
                 >
-                  <Upload className={`w-4 h-4 mr-2 ${isDarkMode ? "text-white" : "text-blue-500"}`} />
-                  Add More Files
+                  <Upload className={`w-4 h-4 ${isDarkMode ? "text-white" : "text-blue-500"}`} />
+                  <span>Add More Files</span>
                 </Button>
               </div>
 
@@ -646,12 +655,12 @@ const LogAnalyzer = () => {
                                 </Badge>
                               )}
                               {file.warnings > 0 && (
-                                <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 text-xs">
+                                <Badge variant="outline" className="text-xs">
                                   {file.warnings} Warnings
                                 </Badge>
                               )}
                               {file.success > 0 && (
-                                <Badge className="bg-green-100 text-green-800 hover:bg-green-200 text-xs">
+                                <Badge variant="outline" className="text-xs">
                                   {file.success} Success/Info
                                 </Badge>
                               )}
@@ -669,23 +678,33 @@ const LogAnalyzer = () => {
                           </div>
                           <div className="flex gap-2">
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              className={cn(
+                                buttonVariants({ variant: "outline", size: "sm" }),
+                                "flex items-center gap-2 bg-background shadow-none text-foreground border-0"
+                              )}
                               onClick={() => toggleFileExpansion(file.id)}
                             >
-                              {expandedFiles.has(file.id) ? 'Collapse' : 'Expand'}
+                              {expandedFiles.has(file.id) ? (
+                                <>
+                                  <span>Collapse</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Expand</span>
+                                </>
+                              )}
                             </Button>
                             {/* Delete button for collapsed (not expanded) files */}
                             {!expandedFiles.has(file.id) && (
                               <Button
-                                variant="ghost"
-                                size="sm"
+                                className={cn(
+                                  buttonVariants({ variant: "outline", size: "sm" }),
+                                  "flex items-center gap-2 bg-background shadow-none text-red-600 border-0"
+                                )}
                                 onClick={() => deleteFile(file.id)}
                                 title="Delete file"
-                                // Always red in both light and dark mode
-                                className="text-red-600"
                               >
-                                <Trash2 className="w-4 h-4" style={{ color: "#ef4444" }} />
+                                <Trash2 className="w-4 h-4" style={{ color: '#ef4444', stroke: '#ef4444' }} />
                               </Button>
                             )}
                           </div>
@@ -716,8 +735,11 @@ const LogAnalyzer = () => {
                                         {entry.originalTimestamp}
                                       </span>
                                     )}
+                                    {/* Fix: Use a fragment to allow array or string children */}
                                     <span className="text-sm font-mono text-gray-700 dark:text-gray-300 flex-1">
-                                      {highlightSearchTerm(entry.line, searchQuery)}
+                                      {Array.isArray(highlightSearchTerm(entry.line, searchQuery))
+                                        ? <>{highlightSearchTerm(entry.line, searchQuery)}</>
+                                        : highlightSearchTerm(entry.line, searchQuery)}
                                     </span>
                                   </div>
                                 ))}

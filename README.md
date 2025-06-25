@@ -2,17 +2,6 @@
   Log Analyzer<br/>
   <a href="https://github.com/NaderEmad9/log-analyzer" target="_blank">GitHub Repository</a>
 </h2>
-
-<div align="center">
-  <img alt="Log Analyzer Screenshot 1" src="./screenshots/screenshot1.png" width="600"/>
-  <br/><br/>
-  <img alt="Log Analyzer Screenshot 2" src="./screenshots/screenshot2.png" width="600"/>
-  <br/><br/>
-  <img alt="Log Analyzer Screenshot 3" src="./screenshots/screenshot3.png" width="600"/>
-  <br/><br/>
-  <img alt="Log Analyzer Screenshot 4" src="./screenshots/screenshot4.png" width="600"/>
-</div>
-
 <br/>
 
 <h3 align="center">

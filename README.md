@@ -47,14 +47,28 @@ Built with React, TypeScript, Tailwind CSS, shadcn/ui, and packaged for desktop 
 
 ## Screenshots
 
+### 🌙 Dark Mode
+
 <div align="center">
-  <img alt="Dashboard" src="./screenshots/screenshot1.png" width="600"/>
+  <img alt="Dark Mode Screenshot 1" src="./screenshots/dark1.png" width="600"/>
   <br/><br/>
-  <img alt="Log File View" src="./screenshots/screenshot2.png" width="600"/>
+  <img alt="Dark Mode Screenshot 2" src="./screenshots/dark2.png" width="600"/>
   <br/><br/>
-  <img alt="Date Range Filter" src="./screenshots/screenshot3.png" width="600"/>
+  <img alt="Dark Mode Screenshot 3" src="./screenshots/dark3.png" width="600"/>
   <br/><br/>
-  <img alt="Dark Mode" src="./screenshots/screenshot4.png" width="600"/>
+  <img alt="Dark Mode Screenshot 4" src="./screenshots/dark4.png" width="600"/>
+</div>
+
+### ☀️ Light Mode
+
+<div align="center">
+  <img alt="Light Mode Screenshot 1" src="./screenshots/light1.png" width="600"/>
+  <br/><br/>
+  <img alt="Light Mode Screenshot 2" src="./screenshots/light2.png" width="600"/>
+  <br/><br/>
+  <img alt="Light Mode Screenshot 3" src="./screenshots/light3.png" width="600"/>
+  <br/><br/>
+  <img alt="Light Mode Screenshot 4" src="./screenshots/light4.png" width="600"/>
 </div>
 
 ---

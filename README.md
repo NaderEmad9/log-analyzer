@@ -30,9 +30,9 @@ Built with React, TypeScript, Tailwind CSS, shadcn/ui, and packaged for desktop 
 ### 🌙 Dark Mode
 
 <div align="center">
-  <img alt="Dark Mode Screenshot 1" src="./screenshots/dark1.png" width="600"/>
+  <img alt="Dark Mode Screenshot 1" src="./screenshots/dark2.png" width="600"/>
   <br/><br/>
-  <img alt="Dark Mode Screenshot 2" src="./screenshots/dark2.png" width="600"/>
+  <img alt="Dark Mode Screenshot 2" src="./screenshots/dark1.png" width="600"/>
   <br/><br/>
   <img alt="Dark Mode Screenshot 3" src="./screenshots/dark3.png" width="600"/>
   <br/><br/>
@@ -42,9 +42,9 @@ Built with React, TypeScript, Tailwind CSS, shadcn/ui, and packaged for desktop 
 ### ☀️ Light Mode
 
 <div align="center">
-  <img alt="Light Mode Screenshot 1" src="./screenshots/light1.png" width="600"/>
+  <img alt="Light Mode Screenshot 1" src="./screenshots/light2.png" width="600"/>
   <br/><br/>
-  <img alt="Light Mode Screenshot 2" src="./screenshots/light2.png" width="600"/>
+  <img alt="Light Mode Screenshot 2" src="./screenshots/light1.png" width="600"/>
   <br/><br/>
   <img alt="Light Mode Screenshot 3" src="./screenshots/light3.png" width="600"/>
   <br/><br/>

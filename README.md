@@ -2,16 +2,7 @@
   Log Analyzer<br/>
   <a href="https://github.com/NaderEmad9/log-analyzer" target="_blank">GitHub Repository</a>
 </h2>
-<br/>
 
-<h3 align="center">
-    ⚠️
-    <a href="https://github.com/NaderEmad9/log-analyzer/issues">Report Bug</a> &nbsp; &nbsp;
-    💡
-    <a href="https://github.com/NaderEmad9/log-analyzer/issues">Request Feature</a>
-</h3>
-
----
 
 ## Overview
 

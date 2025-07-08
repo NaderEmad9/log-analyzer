@@ -3,6 +3,10 @@
   <a href="https://github.com/NaderEmad9/log-analyzer" target="_blank">GitHub Repository</a>
 </h2>
 
+## Important note: 
+
+**If you're struggling with this version, please try the flutter version here:** [Log Analyzer (Flutter Version)](https://github.com/NaderEmad9/log_app)
+
 
 ## Overview
 
